@@ -98,11 +98,7 @@ pipeline {
                     minikube status >NUL 2>&1 || kubectl cluster-info >NUL 2>&1 || (
                         where minikube >NUL 2>&1 && (
                             echo Starting Minikube cluster...
-                            minikube start || (
-                                echo Minikube cluster corrupted. Resetting Minikube cluster...
-                                minikube delete
-                                minikube start
-                            )
+                            minikube start
                         )
                     )
                     kubectl apply -f kubernetes/namespace.yaml 2>NUL || ver >NUL
