@@ -739,6 +739,9 @@ spec:
     - name: web
       port: 2002
       targetPort: 3000
+    - name: alt-web
+      port: 1002
+      targetPort: 3000
     - name: internal
       port: 3000
       targetPort: 3000
