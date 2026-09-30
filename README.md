@@ -36,7 +36,7 @@ An Inventory Management System for managing products, stock and suppliers with a
 - Swagger: http://localhost:2001/docs
 - Health: http://localhost:2001/health
 - Metrics: http://localhost:2001/metrics
-- Grafana: http://localhost:2002 (or http://localhost:1002)
+- Grafana: http://localhost:2002
 - Registry: http://localhost:2000/v2/
 
 ## Kubernetes

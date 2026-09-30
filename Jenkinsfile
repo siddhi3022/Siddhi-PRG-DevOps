@@ -90,7 +90,6 @@ pipeline {
                     start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& kubectl port-forward service/prometheus 1000:1000 -n %MON% > prometheus-pf.log 2>&1"
                     start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& kubectl port-forward service/inventory-service 2001:2001 -n %NS% > inventory-pf.log 2>&1"
                     start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& kubectl port-forward service/grafana 2002:2002 -n %MON% > grafana-pf.log 2>&1"
-                    start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& kubectl port-forward service/grafana 1002:1002 -n %MON% > grafana-1002-pf.log 2>&1"
                     timeout /t 5 /nobreak >NUL
                     exit /b 0
                 '''
@@ -104,7 +103,7 @@ pipeline {
             echo 'INVENTORY CI/CD PIPELINE COMPLETED SUCCESSFULLY'
             echo 'Prometheus: http://localhost:1000'
             echo 'API Docs:   http://localhost:2001/docs'
-            echo 'Grafana:    http://localhost:2002 or http://localhost:1002'
+            echo 'Grafana:    http://localhost:2002'
             echo 'Registry:   localhost:2000/inventory-service:v1.0.0'
             echo '======================================================='
         }
