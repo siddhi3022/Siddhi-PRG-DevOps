@@ -33,11 +33,11 @@ pipeline {
             steps {
                 bat '''
                     where trivy >NUL 2>&1 && (
-                        trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 %IMAGE%
+                        trivy image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 %IMAGE%
                     ) || (
                         where docker >NUL 2>&1 && (
                             echo Trivy CLI not found on host PATH. Running Trivy via Docker container...
-                            docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 %IMAGE%
+                            docker run --rm -v //var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache/ aquasec/trivy:latest image --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 %IMAGE%
                         ) || (
                             echo Trivy and Docker not found. Skipping Trivy scan.
                         )
@@ -49,8 +49,10 @@ pipeline {
         stage('Container Registry') {
             steps {
                 bat '''
-                    docker rm -f inventory-registry 2>NUL || ver >NUL
-                    docker run -d -p 2000:5000 --restart unless-stopped --name inventory-registry registry:2
+                    docker ps -q -f name=inventory-registry >NUL 2>&1 || (
+                        docker rm -f inventory-registry 2>NUL || ver >NUL
+                        docker run -d -p 2000:5000 --restart unless-stopped --name inventory-registry registry:2
+                    )
                     docker push %REGISTRY_IMAGE%
                 '''
             }
@@ -94,7 +96,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat '''
-                    kubectl cluster-info >NUL 2>&1 || (
+                    minikube status >NUL 2>&1 || kubectl cluster-info >NUL 2>&1 || (
                         where minikube >NUL 2>&1 && (
                             echo Starting Minikube cluster...
                             minikube start || (
