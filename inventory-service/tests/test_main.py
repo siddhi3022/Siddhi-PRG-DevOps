@@ -3,20 +3,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from itertools import count
 from fastapi.testclient import TestClient
-import app.main as main
 from app.main import app, products, suppliers, stock
 
 client = TestClient(app)
 
 def setup_function():
-    products.clear()
-    suppliers.clear()
-    stock.clear()
-    main.product_ids = count(1)
-    main.supplier_ids = count(1)
-    main.stock_ids = count(1)
+    products.clear(); suppliers.clear(); stock.clear()
 
 def test_health():
     assert client.get("/health").status_code == 200
