@@ -94,7 +94,18 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat '''
-                    kubectl cluster-info >NUL 2>&1 || (where minikube >NUL 2>&1 && minikube start)
+                    kubectl cluster-info >NUL 2>&1 || (
+                        where minikube >NUL 2>&1 && (
+                            echo Starting Minikube cluster...
+                            minikube start || (
+                                echo Minikube cluster corrupted. Resetting Minikube cluster...
+                                minikube delete
+                                minikube start
+                            )
+                        )
+                    )
+                    kubectl apply -f kubernetes/namespace.yaml 2>NUL || ver >NUL
+                    kubectl apply -f kubernetes/monitoring/namespace.yaml 2>NUL || ver >NUL
                     kubectl apply -f kubernetes -R
                     kubectl rollout status deployment/%APP% -n %NS% --timeout=120s
                     kubectl get pods -n %NS%
