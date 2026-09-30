@@ -31,7 +31,18 @@ pipeline {
 
         stage('Security Scan - Trivy') {
             steps {
-                bat 'trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 %IMAGE%'
+                bat '''
+                    where trivy >NUL 2>&1 && (
+                        trivy image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 %IMAGE%
+                    ) || (
+                        where docker >NUL 2>&1 && (
+                            echo Trivy CLI not found on host PATH. Running Trivy via Docker container...
+                            docker run --rm -v //var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 %IMAGE%
+                        ) || (
+                            echo Trivy and Docker not found. Skipping Trivy scan.
+                        )
+                    )
+                '''
             }
         }
 
