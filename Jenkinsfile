@@ -8,6 +8,8 @@ pipeline {
         VERSION = 'v1.0.0'
         IMAGE = 'inventory-service:v1.0.0'
         REGISTRY_IMAGE = 'localhost:2000/inventory-service:v1.0.0'
+        KUBECONFIG = 'C:\\Users\\Riddhi siddhi\\.kube\\config'
+        MINIKUBE_HOME = 'C:\\Users\\Riddhi siddhi\\.minikube'
     }
 
     stages {
@@ -70,7 +72,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat '''
-                    kubectl config use-context minikube >NUL 2>&1 || ver >NUL
+                    minikube update-context >NUL 2>&1 || ver >NUL
                     kubectl apply -f kubernetes/namespace.yaml
                     kubectl apply -f kubernetes/monitoring/namespace.yaml
                     kubectl apply -f kubernetes -R
