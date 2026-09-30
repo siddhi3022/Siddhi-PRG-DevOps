@@ -49,7 +49,7 @@ pipeline {
         stage('Container Registry') {
             steps {
                 bat '''
-                    docker ps -q -f name=inventory-registry >NUL 2>&1 || (
+                    docker ps -q -f name=inventory-registry -f status=running | findstr . >NUL 2>&1 || (
                         docker rm -f inventory-registry 2>NUL || ver >NUL
                         docker run -d -p 2000:5000 --restart unless-stopped --name inventory-registry registry:2
                     )
@@ -61,6 +61,11 @@ pipeline {
         stage('Load Image to Kubernetes') {
             steps {
                 bat '''
+                    where minikube >NUL 2>&1 && (
+                        echo Loading image via minikube CLI...
+                        minikube image load %IMAGE% && exit /b 0
+                    )
+
                     docker inspect minikube >NUL 2>&1 && (
                         echo Loading image into Minikube container...
                         docker save -o k8s.tar %IMAGE%
@@ -78,12 +83,6 @@ pipeline {
                         docker exec desktop-control-plane ctr -n k8s.io images import /k8s.tar
                         docker exec desktop-control-plane rm -f /k8s.tar
                         del /f /q k8s.tar
-                        exit /b 0
-                    )
-
-                    where minikube >NUL 2>&1 && (
-                        echo Loading image via minikube CLI...
-                        minikube image load %IMAGE%
                         exit /b 0
                     )
 
@@ -109,7 +108,11 @@ pipeline {
                     kubectl apply -f kubernetes/namespace.yaml 2>NUL || ver >NUL
                     kubectl apply -f kubernetes/monitoring/namespace.yaml 2>NUL || ver >NUL
                     kubectl apply -f kubernetes -R
-                    kubectl rollout status deployment/%APP% -n %NS% --timeout=120s
+                    kubectl rollout status deployment/%APP% -n %NS% --timeout=120s || (
+                        echo Deployment rollout failed. Performing automated rollback...
+                        kubectl rollout undo deployment/%APP% -n %NS%
+                        exit /b 1
+                    )
                     kubectl get pods -n %NS%
                 '''
             }
@@ -120,9 +123,10 @@ pipeline {
                 bat '''
                     taskkill /F /IM kubectl.exe 2>NUL || ver >NUL
                     set JENKINS_NODE_COOKIE=dontKillMe
-                    start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& kubectl port-forward service/prometheus 1000:1000 -n %MON% > prometheus-pf.log 2>&1"
-                    start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& kubectl port-forward service/inventory-service 2001:2001 -n %NS% > inventory-pf.log 2>&1"
-                    start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& kubectl port-forward service/grafana 2002:2002 -n %MON% > grafana-pf.log 2>&1"
+                    set BUILD_ID=dontKillMe
+                    start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& set BUILD_ID=dontKillMe&& kubectl port-forward service/prometheus 1000:1000 -n %MON% > prometheus-pf.log 2>&1"
+                    start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& set BUILD_ID=dontKillMe&& kubectl port-forward service/inventory-service 2001:2001 -n %NS% > inventory-pf.log 2>&1"
+                    start "" /B cmd /c "set JENKINS_NODE_COOKIE=dontKillMe&& set BUILD_ID=dontKillMe&& kubectl port-forward service/grafana 2002:2002 -n %MON% > grafana-pf.log 2>&1"
                     timeout /t 5 /nobreak >NUL
                     exit /b 0
                 '''
